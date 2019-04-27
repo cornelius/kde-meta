@@ -1,0 +1,81 @@
+#!/usr/bin/ruby
+
+require "open-uri"
+gem "terminal-table"
+require "terminal-table"
+require "json"
+
+frameworks_version = nil
+
+manifest_url = "https://inqlude.org/inqlude-all.json"
+
+json = JSON.parse(open(manifest_url) { |f| f.read} )
+
+output_rows = []
+
+json.each do |lib|
+  if lib["group"] == "kde-frameworks"
+    name = lib["name"]
+    version = lib["version"]
+
+    if !frameworks_version
+      frameworks_version = version
+    else
+      if frameworks_version != version
+        puts "Got different version: '#{version}, expected: '#{frameworks_version}"
+      end
+    end
+
+    puts name
+
+    output_row = []
+
+    output_row.push(name)
+    output_row.push(version)
+
+    download_url = lib["urls"]["download"] + name + "-" + version + ".tar.xz"
+    output_row.push(download_url)
+
+    package_url = lib["urls"]["vcs"]
+    output_row.push(package_url)
+
+    output_row.push(lib["licenses"].join(";"))
+
+    output_row.push(lib["summary"])
+
+    output_rows.push(output_row)
+  end
+end
+
+output_headings = ["Name", "Version", "Download URL", "Package URL", "License", "Description"]
+
+table = Terminal::Table.new :headings => output_headings, :rows => output_rows
+
+puts table
+
+filename_base = "kde-frameworks-#{frameworks_version}"
+
+File.open("#{filename_base}.html", "w") do |file|
+  file.puts "<h1>KDE Frameworks #{frameworks_version}</h1>"
+  file.puts "<table>"
+  output_rows.each do |row|
+    file.puts "<tr>"
+    row.each do |cell|
+      file.print "<td>"
+      if cell =~ /http/
+        file.print "<a href='#{cell}'>#{cell}</a>"
+      else
+        file.print cell
+      end
+      file.puts "</td>"
+    end
+  end
+  file.puts "</table>"
+end
+
+File.open("#{filename_base}.csv", "w") do |file|
+  file.puts(output_headings.join(","))
+  output_rows.each do |row|
+    file.puts(row.join(","))
+  end
+end
