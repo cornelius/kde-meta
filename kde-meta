@@ -13,6 +13,9 @@ json = JSON.parse(open(manifest_url) { |f| f.read} )
 
 output_rows = []
 
+project_url = "https://api.kde.org/frameworks/"
+project_download_url = "https://download.kde.org/stable/frameworks/"
+
 json.each do |lib|
   if lib["group"] == "kde-frameworks"
     name = lib["name"]
@@ -33,11 +36,12 @@ json.each do |lib|
     output_row.push(name)
     output_row.push(version)
 
+    output_row.push(project_download_url)
+
+    output_row.push(project_url)
+
     download_url = lib["urls"]["download"] + name + "-" + version + ".tar.xz"
     output_row.push(download_url)
-
-    package_url = lib["urls"]["vcs"]
-    output_row.push(package_url)
 
     output_row.push(lib["licenses"].join(";"))
 
@@ -47,7 +51,7 @@ json.each do |lib|
   end
 end
 
-output_headings = ["Name", "Version", "Download URL", "Package URL", "License", "Description"]
+output_headings = ["Name", "Version", "Proj Download URL", "Pjoject URL", "PkgVer Download Link", "License", "Description"]
 
 table = Terminal::Table.new :headings => output_headings, :rows => output_rows
 
@@ -57,7 +61,15 @@ filename_base = "kde-frameworks-#{frameworks_version}"
 
 File.open("#{filename_base}.html", "w") do |file|
   file.puts "<h1>KDE Frameworks #{frameworks_version}</h1>"
+
   file.puts "<table>"
+
+  file.puts "<tr>"
+  output_headings.each do |heading|
+    file.puts "<td>#{heading}</td>"
+  end
+  file.puts "</tr>"
+
   output_rows.each do |row|
     file.puts "<tr>"
     row.each do |cell|
@@ -70,6 +82,7 @@ File.open("#{filename_base}.html", "w") do |file|
       file.puts "</td>"
     end
   end
+
   file.puts "</table>"
 end
 
